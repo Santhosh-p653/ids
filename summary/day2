@@ -1,0 +1,28 @@
+PROJECT LOG: MOBILE IDS 
+
+CREATE A METRICS.PY
+PURPOSE: To collect the info about cpu processes,memory utilization of device,battery consumption,sensor states and details,system logs to train the model
+PROCESS:The python script helps to create a csv filenamed metrics.csv to store the device logs .This data will be  scrubbed ,
+extracting feautures which are required the table will be  converted to two dimensional matrix for convenience and clean the missing values by row compression techniques.
+There will be a tradeoff between models performance and missing data 
+AIM:
+ To convert the dataset into useful data and can be synthesized with mean,median,modes to cover up the  missing values
+ One hot encoding will be performed to convert the data as nuerical for classsification friendly
+ Binning is another category of feauture engineering useful to convert numerical data to categorical data
+ How much data do I need?
+  May be 1000,2000,10000,or even more
+NEXT STEPS TO BE PERFORMED ON FOLLOWING DAYS:
+#SCHEMA MATCHING
+#DATA STANDARDIZATION
+#DATA PROFILING
+#SIMILARITY JOINS
+#PARSING
+#ONE HOT ENCODING
+#BINNNING
+#BAGGING
+SUMMARY:
+1.Collected a minimal amount of dataset by using thsi scripts. 
+2.Created a github repo for version control and collaborative workflow
+3.Defined a project structure
+4.Installation of openjdk package for java 
+5.Push the needed scripts to github for the future proof works

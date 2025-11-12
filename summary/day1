@@ -1,1 +1,245 @@
-hi
+
+
+📘 Project Log: Mobile IDs — Device Data Collector via ADB
+
+🧩 Project Goal
+
+To build a Mobile IDs system that can connect to multiple Android devices (real or virtual), collect kernel-level and system-level performance data, and store it for further analysis — forming the foundation for a mobile analytics or monitoring framework.
+
+
+---
+
+⚙ Setup Progress
+
+✅ 1. ADB (Android Debug Bridge) Installation
+
+Installed ADB platform tools manually (without Android Studio).
+
+Extracted tools to:
+
+C:\platform-tools
+
+Verified ADB installation using:
+
+adb version
+adb devices
+
+Confirmed that the phone connects via USB debugging and later through Wi-Fi (hotspot connection).
+
+
+
+---
+
+✅ 2. Device Connectivity Testing
+
+Verified connection using:
+
+adb devices
+
+Start developer mode in mobile to access adb
+
+Connected over both:
+
+USB
+
+Wi-Fi (via hotspot) using IP connection
+Example:
+
+adb tcpip 5555
+adb connect 192.168.x.x:5555
+
+
+
+
+---
+
+⚠ 3. IP Retrieval Issue
+
+Discovered that usb0 and rndis0 interfaces do not exist on newer phones.
+
+Found actual network interface as:
+
+swlan0 (IP: 192.168.23.28)
+
+Confirmed hotspot-based ADB connection possible.
+
+
+
+---
+
+🧠 4. Batch Script for Automated Data Collection
+File:windows.bat
+
+Purpose:
+> To automatically connect device over hotspot and manage connection 
+
+File: collect_device.bat
+
+Purpose:
+
+> To automatically collect hardware, OS, and performance metrics from any connected Android phone and save them in a timestamped folder.
+
+
+
+Main operations:
+
+Detects first available ADB device.
+
+Collects:
+
+System properties → getprop.txt
+
+CPU info → proc_cpuinfo.txt
+
+Memory info → proc_meminfo.txt
+
+Dumpsys memory report → dumpsys_meminfo.txt
+
+Recent logs → logcat.txt
+
+Screenshot → screen.png
+
+Kernel logs (if accessible) → dmesg.txt
+
+
+
+Output structure:
+
+adb_collect_YYYYMMDD_HHMMSS/
+│
+├── getprop.txt
+├── proc_cpuinfo.txt
+├── proc_meminfo.txt
+├── dumpsys_meminfo.txt
+├── logcat.txt
+├── dmesg.txt
+├── dmesg_err.txt (if dmesg blocked)
+└── screen.png
+
+
+---
+
+🚫 5. dmesg Access Restriction
+
+Command:
+
+adb shell dmesg
+
+→ returned Permission denied on non-rooted device.
+
+Reason:
+
+Modern Android (8+) blocks kernel ring buffer access for security.
+
+
+Alternatives used/planned:
+
+adb bugreport bugreport.zip → for kernel traces.
+
+/proc/ and dumpsys → for safe stats.
+
+adb logcat -b kernel → sometimes works on OEM builds.
+
+
+
+
+---
+
+🧩 6. Real-time Logs Exploration
+
+Used:
+
+adb logcat
+
+→ entered continuous live log stream.
+
+Exited safely using: Ctrl + C
+
+Learned alternate modes:
+
+Action	Command
+
+Dump once & exit	adb logcat -d
+Last 200 lines	adb logcat -t 200
+Clear logs	adb logcat -c
+
+
+
+
+---
+
+🔜 Next Planned Steps
+
+Goal	Description
+
+1️⃣	Add more metrics: dumpsys cpuinfo, battery stats, network stats
+2️⃣	Zip output folder for easy transfer
+3️⃣	Create Python multi-device collector (auto-detect all devices)
+4️⃣	Schedule periodic monitoring every few minutes
+5️⃣	Integrate with a Flask backend for dashboard visualization
+6️⃣	Optional: use Perfetto for kernel-level tracing (no root needed)
+
+
+
+---
+
+🧾 Current Files Created
+
+File	Description
+
+collect_device.bat	One-click data collector (Windows)
+adb_collect_<timestamp>/	Folder containing all device logs and reports
+(Planned) adb_multi_collect.py	Python version for multiple devices
+
+
+
+---
+
+🧰 Tools Used
+
+ADB Platform Tools (adb, fastboot)
+
+Command Prompt / PowerShell
+
+Windows batch scripting
+
+Android Developer Options (USB Debugging)
+
+
+
+---
+
+⚙ Device Access Modes Tested
+
+Mode	Status
+
+USB Debugging	✅ Working
+Wi-Fi ADB (hotspot)	✅ Working
+dmesg access	❌ Permission Denied
+/proc filesystem	✅ Accessible
+logcat (system logs)	✅ Working
+
+
+
+---
+
+📍 Current Status:
+
+✅ Base ADB setup and collector working
+⚙ Preparing for kernel-level and performance metric extension
+🧩 Next step: integrate multi-device collection + periodic data logging
+
+Summary:
+
+
+* 05/11/25
+THE PROJECT MOBILE INTRUSION DETECTION SYSTEM  HAS BEEN STARTED AND DEVELEOPED THE ENVIRONMENT TO CHECK THE MOBILE PERFORMANCE AND MAKE CONNECTIONS BEFORE DIVING INTO EXCAT BREAKING OF SYSTEMS .
+STEP1: RECONNAISANCE COLLECT  THE NECESSARY DETAILS ABOUT THE DEVICE HAS BEEEN EXECUTED
+STEP 2: THE ENVIRONMENT ADB IS INSTALLED VIA CLI USING FEW COMMANDS AND THE COMMANDS MENTIONED IN THE ABOVE FILE
+STEP3:START THE DEVELOPER MODE TO CONNECT THE DEVICE
+STEP 4:CONNECT  VIA USB AND WRITTEN WINDOWS.BAT TOAUTOMATE CONNECTION WITHOUT A USB CABLE
+STEP 5: PERFORM A SAMPLE TEST ON CAPTURING SCREENSHOT OF DEVICE  FROM THE HOST SYSTEM
+STEP 6:TRIED TO ACCESS THE MOBILE LOGS ACCESS PERMISSION AND BECESSARY DETAILS AND STORED IN A FOLDER BY WRITING BAT SCRIPT
+STEP7:PERFORMED ADBLOGCAT COMMAND TO ANALYZE THE SYSTEM LOGS
+STEP8: IDENTIFIED CPU PERFORMANCE AND SCHEDULING 
+

@@ -1,98 +1,114 @@
 import subprocess
 import csv
 import time
+import re
 from datetime import datetime
 import os
 
-OUTPUT_FILE = "metrics.csv"
+CSV_FILE = "ids_metrics.csv"
 INTERVAL = 5  # seconds between readings
 
-# Run adb commands safely
-def adb_shell(cmd):
+def adb(command):
+    """Run ADB shell command and return output."""
     try:
-        result = subprocess.check_output(f"adb shell {cmd}", shell=True, stderr=subprocess.DEVNULL)
-        return result.decode("utf-8", errors="ignore").strip()
-    except subprocess.CalledProcessError:
-        return "none"
+        result = subprocess.run(
+            ["adb", "shell", command],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        return result.stdout.strip()
+    except Exception as e:
+        return f"Error: {e}"
 
-def adb(cmd):
-    try:
-        result = subprocess.check_output(f"adb {cmd}", shell=True, stderr=subprocess.DEVNULL)
-        return result.decode("utf-8", errors="ignore").strip()
-    except subprocess.CalledProcessError:
-        return "none"
+def get_foreground_app():
+    output = adb("dumpsys activity activities")
+    match = re.search(r"mResumedActivity:.*? ([\w\.]+)/", output)
+    return match.group(1) if match else "Unknown"
 
-def get_cpu_usage():
-    cpu_info = adb_shell("top -n 1 -b | head -10")
-    return cpu_info if cpu_info else "none"
+def get_cpu_cores():
+    output = adb("cat /proc/cpuinfo")
+    cores = len(re.findall(r"processor\s*:", output))
+    return cores if cores else 0
 
-def get_mem_usage():
-    mem = adb_shell("cat /proc/meminfo | head -5")
-    return mem if mem else "none"
+def get_memory_kb():
+    output = adb("cat /proc/meminfo")
+    match = re.search(r"MemAvailable:\s*(\d+)", output) or re.search(r"MemFree:\s*(\d+)", output)
+    return int(match.group(1)) if match else None
 
-def get_battery_status():
-    batt = adb_shell("dumpsys battery | grep level")
-    return batt if batt else "none"
+def get_battery_info():
+    output = adb("dumpsys battery")
+    level = re.search(r"level[:=]\s*(\d+)", output)
+    temp = re.search(r"temperature[:=]\s*(\d+)", output)
+    voltage = re.search(r"voltage[:=]\s*(\d+)", output)
 
-def get_temperature():
-    temp = adb_shell("dumpsys battery | grep temperature")
-    return temp if temp else "none"
+    battery_level = int(level.group(1)) if level else None
+    temperature = (int(temp.group(1)) / 10) if temp else None
+    voltage = (int(voltage.group(1)) / 1000) if voltage else None
 
-def get_running_apps():
-    apps = adb_shell("dumpsys activity | grep 'Run #' | head -5")
-    return apps if apps else "none"
+    return battery_level, temperature, voltage
 
-def get_network_stats():
-    net = adb_shell("cat /proc/net/dev | grep wlan0")
-    return net if net else "none"
+def get_wifi_ssid():
+    output = adb("dumpsys wifi")
+    match = re.search(r'SSID: "(.*?)"', output)
+    return match.group(1) if match else "Unknown"
 
-def get_logcat_sample():
-    logs = adb("logcat -d -t 10 | tail -n 5")
-    adb("logcat -c")  # clear after reading
-    return logs if logs else "none"
-
-def initialize_csv():
-    if not os.path.exists(OUTPUT_FILE):
-        with open(OUTPUT_FILE, mode="w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow([
-                "timestamp",
-                "cpu_usage",
-                "mem_usage",
-                "battery_level",
-                "temperature",
-                "running_apps",
-                "network_stats",
-                "log_sample"
-            ])
-
-def append_metrics():
+def collect_metrics():
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    cpu = get_cpu_usage()
-    mem = get_mem_usage()
-    batt = get_battery_status()
-    temp = get_temperature()
-    apps = get_running_apps()
-    net = get_network_stats()
-    logs = get_logcat_sample()
+    app = get_foreground_app()
+    cpu = get_cpu_cores()
+    mem = get_memory_kb()
+    batt, temp, volt = get_battery_info()
+    wifi = get_wifi_ssid()
 
-    row = [timestamp, cpu, mem, batt, temp, apps, net, logs]
+    return {
+        "timestamp": timestamp,
+        "app": app,
+        "cpu_cores": cpu,
+        "memory_kb": mem,
+        "battery_%": batt,
+        "temperature_°C": temp,
+        "voltage_V": volt,
+        "wifi_ssid": wifi
+    }
 
-    with open(OUTPUT_FILE, mode="a", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(row)
+def convert_to_binary_features(metrics):
+    return {
+        "suspicious_app": int(metrics["app"] in ["com.risky.app", "com.unknown.source"]),
+        "high_cpu_cores": int(metrics["cpu_cores"] > 8),
+        "low_memory": int(metrics["memory_kb"] is not None and metrics["memory_kb"] < 500000),
+        "low_battery": int(metrics["battery_%"] is not None and metrics["battery_%"] < 20),
+        "high_temperature": int(metrics["temperature_°C"] is not None and metrics["temperature_°C"] > 40),
+        "abnormal_voltage": int(metrics["voltage_V"] is not None and (metrics["voltage_V"] < 3.5 or metrics["voltage_V"] > 4.5)),
+        "unknown_wifi": int(metrics["wifi_ssid"] not in ["HomeNetwork", "OfficeNetwork", "Varsha💖"])
+    }
 
-    print(f"[+] Logged at {timestamp}")
+def combine_metrics(metrics):
+    binary = convert_to_binary_features(metrics)
+    return {**metrics, **binary}
+
+def save_to_csv(data):
+    file_exists = os.path.isfile(CSV_FILE)
+    with open(CSV_FILE, mode="a", newline="", encoding="utf-8") as file:
+        writer = csv.DictWriter(file, fieldnames=data.keys())
+        if not file_exists:
+            writer.writeheader()
+        writer.writerow(data)
 
 def main():
-    initialize_csv()
-    print("📊 Starting ADB data collection... Press Ctrl+C to stop.\n")
+    print("🔐 Starting Android IDS Metrics Collector...")
+    print(f"Saving to: {os.path.abspath(CSV_FILE)}\nPress Ctrl+C to stop.\n")
+
     try:
         while True:
-            append_metrics()
+            metrics = collect_metrics()
+            combined = combine_metrics(metrics)
+            save_to_csv(combined)
+            print(f"✅ Logged: {combined}")
             time.sleep(INTERVAL)
     except KeyboardInterrupt:
-        print("\n🛑 Data collection stopped. File saved as metrics.csv")
+        print("\n🛑 Stopped. Data saved in ids_metrics.csv.")
 
 if __name__ == "__main__":
+    print("Saving to:", os.getcwd())
     main()

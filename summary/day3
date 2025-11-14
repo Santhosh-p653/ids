@@ -1,0 +1,37 @@
+PROJECT LOG :MOBILE IDS
+
+CREATED A EXTENDEDMETRICS.PY TO COLLECT MORE USEFUL DATA FROM THE DEVICE THAN METRICS.PY
+USE SHUFFLE.PY TO SGUFFLE THE CSV FORMAT BEFORE TRAINING THE MODEL
+CREATED A DATASET IN CSV FORMAT AND MAKING READY FOR THE FUTURE USE TO TRAIN THE MACHINE LEARNING MODEL
+PERFORMED DATA STANDARDIZATION ,ONE HOT ENCODING TO MAKE THE DATASET CLEAN AND INFORMATIVE
+THE DATA SET CURRENTLY CONSISTS OF 500 ROWS OF DATA WITHOUT HEADERS AFTER REMOVING THE MISSING VALUES FROM THE PROCESSING DATASET 
+POPULATING THE DATASET WITH STANDARD FORMAT OF DATA CLEANING
+ 
+
+
+#MACHINE LEARNING MODEL
+1.Trained a machine learning model by dropping time related columns,wifi status,foreground running application because it is unrelated to the machine learning model to train and it doesn't improve the model accuracy
+2.The result set columns were removed from the x and stored in y
+3.Split the dataset in 20:80 ratio for better accuracy it can be 30:70 and not more than that .if so the model will overfit  and less than the ratio the model will underfit we fit random state as 42 only for accuracy measures and it can vary but 42 provide good results .
+4.Fit the model by training the dataset x_train,y_train
+5.Save the trained model
+6.Use the model to predict the result from test data
+7.Displaying confusion matrix and classification report
+
+Result:
+
+
+
+ Confusion Matrix:
+ [[81  0]
+ [ 7 12]]
+
+Classification Report:
+               precision    recall  f1-score   support
+
+           0       0.92      1.00      0.96        81
+           1       1.00      0.63      0.77        19
+
+    accuracy                           0.93       100
+   macro avg       0.96      0.82      0.87       100
+weighted avg       0.94      0.93      0.92       100
